@@ -30,10 +30,10 @@ jobs:
             local file=$1
             local name=$(jq -r '.name' "$file")
             local url=$(jq -r '.url' "$file")
-            local branch=$(jq -r '.buildCommands.branchName // "main"' "$file")
+            local branch=$(jq -r '.buildCommands.branchName // ""' "$file")
             local current_sha=$(jq -r '.sha // "null"' "$file")
             
-            echo "Processing $name ($url) on branch $branch"
+            echo "Processing $name ($url)"
             
             # Extract owner and repo from GitHub URL
             if [[ $url =~ github.com/([^/]+)/([^/]+) ]]; then
@@ -46,17 +46,25 @@ jobs:
               echo "Owner: $owner, Repo: $repo"
               
               # Get the latest commit SHA from GitHub API
-              github_url="https://api.github.com/repos/$owner/$repo/commits/$branch"
-              echo "GitHub URL: $github_url"
-              latest_sha=$(curl -s -H "Authorization: token ${{ secrets.GH_TOKEN }}" $github_url | jq -r '.sha')
+              local github_url
+              local latest_sha
+              
+              if [[ -z "$branch" ]]; then
+                # If no branch is specified, get the latest commit from default branch
+                github_url="https://api.github.com/repos/$owner/$repo/commits"
+                echo "GitHub URL (no branch specified): $github_url"
+                latest_sha=$(curl -s -H "Authorization: token ${{ secrets.GH_TOKEN }}" $github_url | jq -r '.[0].sha')
+              else
+                # If branch is specified, get the latest commit from that branch
+                github_url="https://api.github.com/repos/$owner/$repo/commits/$branch"
+                echo "GitHub URL (branch: $branch): $github_url"
+                latest_sha=$(curl -s -H "Authorization: token ${{ secrets.GH_TOKEN }}" $github_url | jq -r '.sha')
+              fi
               
               echo "Latest SHA: $latest_sha"
               echo "Current SHA: $current_sha"
               
               if [[ $latest_sha != "null" && $latest_sha != "" ]]; then
-                echo "Latest SHA: $latest_sha"
-                echo "Current SHA: $current_sha"
-                
                 # Update if SHA is null, empty, or different from latest
                 if [[ $current_sha == "null" || $current_sha == "" || $latest_sha != $current_sha ]]; then
                   echo "SHA has changed or was not set, updating file..."
