@@ -15,7 +15,6 @@ jobs:
           name: Find the Commit that Triggered Workflow
           command: |
             echo "Commit Hash: $CIRCLE_SHA1"
-            echo "Triggered by commit: $CIRCLE_SHA1" >> $BASH_ENV
 
       - run:
           name: List Modified Files
