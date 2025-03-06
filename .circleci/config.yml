@@ -44,7 +44,8 @@ jobs:
                 package_install_command=$(jq -r '.buildCommands.packageInstallCommand // ""' "$file")
                 build_command=$(jq -r '.buildCommands.buildCommand // ""' "$file")
                 environment_variables=$(jq -r '.buildCommands.environmentVariables // ""' "$file")
-                type=$(jq -r '.type // "static"' "$file") 
+                type=$(jq -r '.type // "static"' "$file")
+                sha=$(jq -r '.sha // ""' "$file")
                 
                 echo "export url=\"$url\"" >> $BASH_ENV
                 echo "export branch=\"$branch\"" >> $BASH_ENV
@@ -83,6 +84,7 @@ jobs:
           name: Store Environment Variables
           command: |
             echo "export $environment_variables" > ~/project/.env.ef_circleci
+            cat ~/project/.env.ef_circleci
 
 
       - run:
@@ -94,24 +96,24 @@ jobs:
             git clone "$REPO_URL" ~/project/repository
 
             cd ~/project/repository
-            if [ -n $sha ]; then
-              git checkout $sha
+            if [ -n "$sha" ]; then
+              git checkout "$sha"
             else
-              echo "No branch specified, staying on default branch."
+              echo "No SHA specified, staying on default branch."
             fi
 
       - run:
           name: Build Project
           working_directory: ~/project/repository
           command: |
-            if [ $type = "static" ]; then
+            if [ "$type" = "static" ]; then
               set -e
               [ -f ~/project/.env ] && source ~/project/.env
               [ -f ~/project/.env.ef_circleci ] && source ~/project/.env.ef_circleci
-              [ -n $build_dir ] && cd $build_dir
-              [ -n $package_install_command ] && eval $package_install_command
-              eval $build_command
-            elif [ $type = "nextjs" ]; then
+              [ -n "$build_dir" ] && cd "$build_dir"
+              [ -n "$package_install_command" ] && eval "$package_install_command"
+              eval "$build_command"
+            elif [ "$type" = "nextjs" ]; then
               set -e
 
               # Function to log messages
@@ -125,13 +127,13 @@ jobs:
               [ -f ~/project/.env.ef_circleci ] && source ~/project/.env.ef_circleci
 
               # Change to the specified build directory if provided
-              if [ -n $build_dir ]; then
+              if [ -n "$build_dir" ]; then
                 log "Changing to build directory: $build_dir"
-                cd $build_dir
+                cd "$build_dir"
               fi
 
               # Install dependencies
-              if [ -n $package_install_command ]; then
+              if [ -n "$package_install_command" ]; then
                 log "Installing dependencies..."
                 eval "NEXT_PRIVATE_STANDALONE=true $package_install_command"
               else
@@ -140,7 +142,7 @@ jobs:
               fi
 
               # Build the project
-              if [ -n $build_command ]; then
+              if [ -n "$build_command" ]; then
                 log "Building the project..."
                 eval "NEXT_PRIVATE_STANDALONE=true $build_command"
               else
@@ -157,42 +159,39 @@ jobs:
               mv .next/standalone/* output/
               mv .next/standalone/.next output/
               mv .next/static/ output/.next/
-              mv public/* output/public/
+              cp -r public/* output/public/ 2>/dev/null || true
 
               log "Listing contents of output directory:"
               ls -A1 output/
 
               # Set OUTPUT_DIR to output
-              echo "export OUTPUT_DIR=output" >> $BASH_ENV
+              echo "export output_dir=output" >> $BASH_ENV
             else
               echo "Unknown project type, skipping build."
             fi
 
-      - when:
-          condition:
-            equal: ["static", $type]
-          steps:
-            - run:
-                name: Check for index.html
-                working_directory: ~/project/repository
-                command: |
-                  OUTPUT_DIR=.
-                  if [ -n $output_dir ]; then
-                    OUTPUT_DIR=$output_dir
-                  fi
-                  if [ -f "$OUTPUT_DIR/index.html" ]; then
-                    echo "index.html found in $OUTPUT_DIR"
-                  else
-                    echo "Error: index.html not found in $OUTPUT_DIR"
-                    exit 1
-                  fi
+      - run:
+          name: Check for index.html
+          working_directory: ~/project/repository
+          command: |
+            OUTPUT_DIR=.
+            if [ -n "$output_dir" ]; then
+              OUTPUT_DIR=$output_dir
+            fi
+            if [ -f "$OUTPUT_DIR/index.html" ]; then
+              echo "index.html found in $OUTPUT_DIR"
+            else
+              echo "Error: index.html not found in $OUTPUT_DIR"
+              exit 1
+            fi
+            
 
       - run:
           name: Create Earthfast Bundle
           working_directory: ~/project
           command: |
-            # Check if FRAMEWORK is 'nextjs' and set OUTPUT_DIR accordingly
-            if [ $type = "nextjs" ]; then
+            # Check if type is 'nextjs' and set OUTPUT_DIR accordingly
+            if [ "$type" = "nextjs" ]; then
               OUTPUT_DIR="output"
             else
               OUTPUT_DIR=$output_dir
@@ -204,7 +203,7 @@ jobs:
             bundle_filename="$(npx --package=earthfast-cli@0.10.2 --yes earthfast bundle create earthfast-bundle "$BUNDLE_PATH")"
             checksum="$(npx --package=earthfast-cli@0.10.2 --yes earthfast bundle checksum $bundle_filename)"
 
-            echo $checksum > ~/project/repository/checksum
+            echo "$checksum" > ~/project/repository/checksum
             echo "Bundle Filename: $bundle_filename"
             echo "Checksum: $checksum"
 
