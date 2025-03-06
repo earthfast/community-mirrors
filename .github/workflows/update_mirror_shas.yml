@@ -46,9 +46,9 @@ jobs:
               echo "Owner: $owner, Repo: $repo"
               
               # Get the latest commit SHA from GitHub API
-              echo "Getting latest SHA for $owner/$repo/$branch"
-              local latest_sha=$(curl -s \
-                "https://api.github.com/repos/$owner/$repo/commits/$branch" | jq -r '.sha')
+              github_url="https://api.github.com/repos/$owner/$repo/commits/$branch"
+              echo "GitHub URL: $github_url"
+              local latest_sha=$(curl -s $github_url | jq -r '.sha')
               
               echo "Latest SHA: $latest_sha"
               echo "Current SHA: $current_sha"
