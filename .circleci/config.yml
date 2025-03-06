@@ -46,7 +46,7 @@ jobs:
                 environment_variables=$(jq -r '.buildCommands.environmentVariables // ""' "$file")
                 type=$(jq -r '.type // "static"' "$file")
                 sha=$(jq -r '.sha // ""' "$file")
-                
+                project_id=$(jq -r '.projectId // ""' "$file")
                 echo "export url=\"$url\"" >> $BASH_ENV
                 echo "export branch=\"$branch\"" >> $BASH_ENV
                 echo "export build_dir=\"$build_dir\"" >> $BASH_ENV
@@ -159,7 +159,7 @@ jobs:
               mv .next/standalone/* output/
               mv .next/standalone/.next output/
               mv .next/static/ output/.next/
-              cp -r public/* output/public/ 2>/dev/null || true
+              mv public/* output/public/
 
               log "Listing contents of output directory:"
               ls -A1 output/
@@ -184,7 +184,6 @@ jobs:
               echo "Error: index.html not found in $OUTPUT_DIR"
               exit 1
             fi
-            
 
       - run:
           name: Create Earthfast Bundle
@@ -211,6 +210,14 @@ jobs:
           path: earthfast-bundle.tgz
       - store_artifacts:
           path: ~/project/repository/checksum
+      
+      - run:
+          name: Update version on chain
+          environment:
+            PROJECT_OWNER_WALLET_PRIVATE_KEY: $PROJECT_OWNER_WALLET_PRIVATE_KEY
+          command: |
+            npx earthfast-cli@0.10.3 project update $project_id $bundle_filename $checksum --key=$PROJECT_OWNER_WALLET_PRIVATE_KEY
+      
 
 workflows:
   version: 2
