@@ -46,7 +46,7 @@ jobs:
               echo "Owner: $owner, Repo: $repo"
               
               # Get the latest commit SHA from GitHub API
-              local latest_sha=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              local latest_sha=$(curl -s \
                 "https://api.github.com/repos/$owner/$repo/commits/$branch" | jq -r '.sha')
               
               if [[ $latest_sha != "null" && $latest_sha != "" ]]; then
@@ -88,7 +88,7 @@ jobs:
           
           # Process all mirror JSON files individually
           updates_count=0
-          for file in community-mirrors/mirrors/*.json; do
+          for file in mirrors/*.json; do
             if update_mirror_sha "$file"; then
               updates_count=$((updates_count + 1))
             fi
