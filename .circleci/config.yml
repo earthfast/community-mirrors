@@ -44,7 +44,7 @@ jobs:
                 package_install_command=$(jq -r '.buildCommands.packageInstallCommand // ""' "$file")
                 build_command=$(jq -r '.buildCommands.buildCommand // ""' "$file")
                 environment_variables=$(jq -r '.buildCommands.environmentVariables // ""' "$file")
-                type=$(jq -r '.type // ""' "$file")
+                type=$(jq -r '.type // "static"' "$file") 
                 
                 echo "export url=\"$url\"" >> $BASH_ENV
                 echo "export branch=\"$branch\"" >> $BASH_ENV
@@ -53,6 +53,7 @@ jobs:
                 echo "export package_install_command=\"$package_install_command\"" >> $BASH_ENV
                 echo "export build_command=\"$build_command\"" >> $BASH_ENV
                 echo "export type=\"$type\"" >> $BASH_ENV
+                echo "export sha=\"$sha\"" >> $BASH_ENV
                 echo "export environment_variables=\"$environment_variables\"" >> $BASH_ENV
                 echo "=============================="
               fi
@@ -93,8 +94,8 @@ jobs:
             git clone "$REPO_URL" ~/project/repository
 
             cd ~/project/repository
-            if [ -n $branch ]; then
-              git checkout $branch
+            if [ -n $sha ]; then
+              git checkout $sha
             else
               echo "No branch specified, staying on default branch."
             fi
