@@ -1,0 +1,13 @@
+{
+  "name": "EternalSafe Wallet",
+  "url": "https://github.com/eternalsafe/wallet",
+  "buildCommands": {
+    "buildDir": "",
+    "outputDir": "out",
+    "buildCommand": "yarn build",
+    "environmentVariables": "NEXT_PUBLIC_IS_PRODUCTION=true\nNEXT_PUBLIC_SAFE_VERSION=\nNEXT_PUBLIC_WC_PROJECT_ID=9ba6208a8fda0b478d4533d4e70219b6",
+    "packageInstallCommand": "yarn install",
+    "branchName": "main"
+  },
+  "projectId": "0xc588bd85af64879c0999911852d2549e38c750e7e4e194eb8891b0913e93b12c"
+}

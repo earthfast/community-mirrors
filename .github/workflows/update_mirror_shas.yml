@@ -1,0 +1,97 @@
+name: Update Mirror SHAs
+
+on:
+  # schedule:
+  #   - cron: '*/30 * * * *'  # Run every 30 minutes
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  update-shas:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for proper rebasing
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '22'  # Updated to Node.js 22
+
+      - name: Update mirror SHAs
+        run: |
+          # Configure git
+          git config --global user.name "Mirror Update Bot"
+          git config --global user.email "contact@earthfast.com"
+          
+          # Function to check and update SHA for a mirror
+          update_mirror_sha() {
+            local file=$1
+            local name=$(jq -r '.name' "$file")
+            local url=$(jq -r '.url' "$file")
+            local branch=$(jq -r '.buildCommands.branchName // "main"' "$file")
+            local current_sha=$(jq -r '.sha // "null"' "$file")
+            
+            echo "Processing $name ($url) on branch $branch"
+            
+            # Extract owner and repo from GitHub URL
+            if [[ $url =~ github.com/([^/]+)/([^/]+) ]]; then
+              local owner=${BASH_REMATCH[1]}
+              local repo=${BASH_REMATCH[2]}
+              
+              # Remove .git suffix if present
+              repo=${repo%.git}
+              
+              echo "Owner: $owner, Repo: $repo"
+              
+              # Get the latest commit SHA from GitHub API
+              local latest_sha=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+                "https://api.github.com/repos/$owner/$repo/commits/$branch" | jq -r '.sha')
+              
+              if [[ $latest_sha != "null" && $latest_sha != "" ]]; then
+                echo "Latest SHA: $latest_sha"
+                echo "Current SHA: $current_sha"
+                
+                # Update if SHA is null, empty, or different from latest
+                if [[ $current_sha == "null" || $current_sha == "" || $latest_sha != $current_sha ]]; then
+                  echo "SHA has changed or was not set, updating file..."
+                  
+                  # Pull latest changes before making our update
+                  git pull --rebase origin $(git branch --show-current)
+                  
+                  # Update the SHA in the JSON file
+                  jq --arg sha "$latest_sha" '. + {sha: $sha}' "$file" > "$file.tmp"
+                  mv "$file.tmp" "$file"
+                  echo "Updated $file with new SHA: $latest_sha"
+                  
+                  # Commit and push this individual change
+                  git add "$file"
+                  git commit -m "Update SHA for $name to $latest_sha [skip ci]"
+                  git push
+                  
+                  echo "Committed and pushed update for $name"
+                  return 0  # SHA was updated
+                else
+                  echo "SHA is unchanged, skipping..."
+                  return 1  # SHA was not updated
+                fi
+              else
+                echo "Failed to fetch latest SHA for $owner/$repo"
+                return 1  # Error or no update
+              fi
+            else
+              echo "Not a GitHub URL or invalid format: $url"
+              return 1  # Error or no update
+            fi
+          }
+          
+          # Process all mirror JSON files individually
+          updates_count=0
+          for file in community-mirrors/mirrors/*.json; do
+            if update_mirror_sha "$file"; then
+              updates_count=$((updates_count + 1))
+            fi
+          done
+          
+          echo "Completed processing with $updates_count updates."
