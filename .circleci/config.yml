@@ -1,0 +1,111 @@
+version: 2.1
+
+executors:
+  ubuntu-executor:
+    docker:
+      - image: cimg/base:stable
+
+jobs:
+  trigger-circleci:
+    executor: ubuntu-executor
+    steps:
+      - checkout
+
+      - run:
+          name: Find the Commit that Triggered Workflow
+          command: |
+            echo "Commit Hash: $CIRCLE_SHA1"
+            echo "Triggered by commit: $CIRCLE_SHA1" >> $BASH_ENV
+
+      - run:
+          name: List Modified Files
+          command: |
+            CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r $CIRCLE_SHA1)
+            echo "Files changed in commit:"
+            echo "$CHANGED_FILES"
+            echo "CHANGED_FILES=$CHANGED_FILES" >> $BASH_ENV
+
+      - run:
+          name: Display File Contents
+          command: |
+            echo "Showing contents of modified files:"
+            for file in $CHANGED_FILES; do
+              if [ -f "$file" ]; then
+                echo "=============================="
+                echo "File: $file"
+                cat "$file"
+                echo "=============================="
+              else
+                echo "File $file does not exist, possibly deleted."
+              fi
+            done
+
+      # - run:
+      #     name: Trigger CircleCI Pipeline and Wait for Response
+      #     command: |
+      #       echo "Triggering external CircleCI pipeline..."
+
+      #       # Trigger the downstream pipeline
+      #       RESPONSE=$(curl -s -X POST \
+      #         -H "Circle-Token: $CIRCLECI_API_TOKEN" \
+      #         -H "Content-Type: application/json" \
+      #         -d '{
+      #           "branch": "main",
+      #           "parameters": {
+      #             "SOURCE_TYPE": "github",
+      #             "S3_URL": "",
+      #             "REPOSITORY": "https://github.com/cheran-senthil/cheran-senthil.github.io",
+      #             "BUILD_DIR": ".",
+      #             "PACKAGE_INSTALL_COMMAND": "ls",
+      #             "BUILD_COMMAND": "ls",
+      #             "OUTPUT_DIR": ".",
+      #             "ENVIRONMENT_VARIABLES": "",
+      #             "ONE_CLICK_SERVER_URL": "https://jorge.ngrok.pro",
+      #             "ENVIRONMENT": "production",
+      #             "TEST_TRIGGER": true,
+      #             "PROJECT_ID": "1"
+      #           }
+      #         }' \
+      #         https://circleci.com/api/v2/project/gh/earthfast/dashboard-runner/pipeline)
+
+      #       # Extract pipeline ID from the response
+      #       PIPELINE_ID=$(echo $RESPONSE | jq -r '.id')
+      #       echo "Triggered Pipeline ID: $PIPELINE_ID"
+
+      #       if [[ "$PIPELINE_ID" == "null" || -z "$PIPELINE_ID" ]]; then
+      #         echo "Failed to trigger pipeline."
+      #         exit 1
+      #       fi
+
+      #       # Wait for the pipeline to complete
+      #       echo "Waiting for pipeline to finish..."
+      #       STATUS="running"
+      #       while [[ "$STATUS" == "running" || "$STATUS" == "queued" ]]; do
+      #         sleep 10
+      #         PIPELINE_INFO=$(curl -s -H "Circle-Token: $CIRCLECI_API_TOKEN" \
+      #           "https://circleci.com/api/v2/pipeline/$PIPELINE_ID")
+      #         STATUS=$(echo $PIPELINE_INFO | jq -r '.state')
+
+      #         echo "Current Pipeline Status: $STATUS"
+      #       done
+
+      #       # Get the final status of the pipeline
+      #       if [[ "$STATUS" == "success" ]]; then
+      #         echo "Pipeline completed successfully!"
+      #         exit 0
+      #       else
+      #         echo "Pipeline failed with status: $STATUS"
+      #         exit 1
+      #       fi
+
+      #     environment:
+      #       CIRCLECI_API_TOKEN: $CIRCLECI_API_TOKEN
+
+workflows:
+  version: 2
+  trigger-pipeline:
+    jobs:
+      - trigger-circleci:
+          filters:
+            branches:
+              only: main
