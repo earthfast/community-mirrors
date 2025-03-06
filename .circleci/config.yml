@@ -20,7 +20,8 @@ jobs:
       - run:
           name: List Modified Files
           command: |
-            CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r $CIRCLE_SHA1 | grep "^mirrors/")
+            # TODO - Use the actual commit hash
+            CHANGED_FILES=$(git diff-tree --no-commit-id --name-only -r fc06baa46857ad7cfa1d5c774cbef96549cf1eee | grep "^mirrors/")
             echo "Files changed in commit:"
             echo "$CHANGED_FILES"
             echo "CHANGED_FILES=$CHANGED_FILES" >> $BASH_ENV
