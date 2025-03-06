@@ -49,6 +49,9 @@ jobs:
               local latest_sha=$(curl -s \
                 "https://api.github.com/repos/$owner/$repo/commits/$branch" | jq -r '.sha')
               
+              echo "Latest SHA: $latest_sha"
+              echo "Current SHA: $current_sha"
+              
               if [[ $latest_sha != "null" && $latest_sha != "" ]]; then
                 echo "Latest SHA: $latest_sha"
                 echo "Current SHA: $current_sha"
