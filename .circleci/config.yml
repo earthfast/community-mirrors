@@ -100,81 +100,73 @@ jobs:
               echo "No branch specified, staying on default branch."
             fi
 
-      - when:
-          condition:
-            equal: ["static", $type]
-          steps:
-            - run:
-                name: Build Project
-                working_directory: ~/project/repository
-                command: |
-                  set -e
-                  [ -f ~/project/.env ] && source ~/project/.env
-                  [ -f ~/project/.env.ef_circleci ] && source ~/project/.env.ef_circleci
-                  [ -n $build_dir ] && cd $build_dir
-                  [ -n $package_install_command ] && eval $package_install_command
-                  eval $build_command
+      - run:
+          name: Build Project
+          working_directory: ~/project/repository
+          command: |
+            if [ $type = "static" ]; then
+              set -e
+              [ -f ~/project/.env ] && source ~/project/.env
+              [ -f ~/project/.env.ef_circleci ] && source ~/project/.env.ef_circleci
+              [ -n $build_dir ] && cd $build_dir
+              [ -n $package_install_command ] && eval $package_install_command
+              eval $build_command
+            elif [ $type = "nextjs" ]; then
+              set -e
 
-      - when:
-          condition:
-            equal: ["nextjs", $type]
-          steps:
-            - run:
-                name: Build Next.js Project
-                working_directory: ~/project/repository
-                command: |
-                  set -e
+              # Function to log messages
+              log() {
+                echo "$(date +'%Y-%m-%d %H:%M:%S') - $1"
+              }
 
-                  # Function to log messages
-                  log() {
-                    echo "$(date +'%Y-%m-%d %H:%M:%S') - $1"
-                  }
+              # Load environment variables
+              log "Loading environment variables..."
+              [ -f ~/project/.env ] && source ~/project/.env
+              [ -f ~/project/.env.ef_circleci ] && source ~/project/.env.ef_circleci
 
-                  # Load environment variables
-                  log "Loading environment variables..."
-                  [ -f ~/project/.env ] && source ~/project/.env
-                  [ -f ~/project/.env.ef_circleci ] && source ~/project/.env.ef_circleci
+              # Change to the specified build directory if provided
+              if [ -n $build_dir ]; then
+                log "Changing to build directory: $build_dir"
+                cd $build_dir
+              fi
 
-                  # Change to the specified build directory if provided
-                  if [ -n $build_dir ]; then
-                    log "Changing to build directory: $build_dir"
-                    cd $build_dir
-                  fi
+              # Install dependencies
+              if [ -n $package_install_command ]; then
+                log "Installing dependencies..."
+                eval "NEXT_PRIVATE_STANDALONE=true $package_install_command"
+              else
+                log "Error: PACKAGE_INSTALL_COMMAND is not set. Exiting."
+                exit 1
+              fi
 
-                  # Install dependencies
-                  if [ -n $package_install_command ]; then
-                    log "Installing dependencies..."
-                    eval "NEXT_PRIVATE_STANDALONE=true $package_install_command"
-                  else
-                    log "Error: PACKAGE_INSTALL_COMMAND is not set. Exiting."
-                    exit 1
-                  fi
+              # Build the project
+              if [ -n $build_command ]; then
+                log "Building the project..."
+                eval "NEXT_PRIVATE_STANDALONE=true $build_command"
+              else
+                log "Error: BUILD_COMMAND is not set. Exiting."
+                exit 1
+              fi
 
-                  # Build the project
-                  if [ -n $build_command ]; then
-                    log "Building the project..."
-                    eval "NEXT_PRIVATE_STANDALONE=true $build_command"
-                  else
-                    log "Error: BUILD_COMMAND is not set. Exiting."
-                    exit 1
-                  fi
+              # Create output directory
+              log "Creating output directories..."
+              mkdir -p output output/public output/.next output/node_modules
 
-                  # Create output directory
-                  log "Creating output directories..."
-                  mkdir -p output output/public output/.next output/node_modules
+              # Move necessary files from standalone to output
+              log "Moving files to output directory..."
+              mv .next/standalone/* output/
+              mv .next/standalone/.next output/
+              mv .next/static/ output/.next/
+              mv public/* output/public/
 
-                  # Move necessary files from standalone to output
-                  log "Moving files to output directory..."
-                  mv .next/standalone/* output/
-                  mv .next/standalone/.next output/
-                  mv .next/static/ output/.next/
-                  mv public/* output/public/
+              log "Listing contents of output directory:"
+              ls -A1 output/
 
-                  log "Listing contents of output directory:"
-                  ls -A1 output/
-
-                  # Set OUTPUT_DIR to output
-                  echo "export OUTPUT_DIR=output" >> $BASH_ENV
+              # Set OUTPUT_DIR to output
+              echo "export OUTPUT_DIR=output" >> $BASH_ENV
+            else
+              echo "Unknown project type, skipping build."
+            fi
 
       - when:
           condition:
