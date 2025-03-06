@@ -9,6 +9,7 @@
     "packageInstallCommand": "yarn install",
     "branchName": ""
   },
+  "type": "static",
   "projectId": "0xc588bd85af64879c0999911852d2549e38c750e7e4e194eb8891b0913e93b12c",
   "sha": "5b8fd259388e4f7d235b895056c85650d383cfa7"
 }
