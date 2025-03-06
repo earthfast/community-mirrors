@@ -48,7 +48,7 @@ jobs:
               # Get the latest commit SHA from GitHub API
               github_url="https://api.github.com/repos/$owner/$repo/commits/$branch"
               echo "GitHub URL: $github_url"
-              local latest_sha=$(curl -s -H "Authorization: token ${{ secrets.GH_TOKEN }}" $github_url | jq -r '.sha')
+              latest_sha=$(curl -s -H "Authorization: token ${{ secrets.GH_TOKEN }}" $github_url | jq -r '.sha')
               
               echo "Latest SHA: $latest_sha"
               echo "Current SHA: $current_sha"
