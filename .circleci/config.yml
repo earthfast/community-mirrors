@@ -216,7 +216,7 @@ jobs:
           environment:
             PROJECT_OWNER_WALLET_PRIVATE_KEY: $PROJECT_OWNER_WALLET_PRIVATE_KEY
           command: |
-            npx earthfast-cli@0.10.3 project update $project_id $bundle_filename $checksum --key=$PROJECT_OWNER_WALLET_PRIVATE_KEY
+            npx earthfast-cli@0.10.3 project publish $project_id $bundle_filename $checksum --key=$PROJECT_OWNER_WALLET_PRIVATE_KEY
       
 
 workflows:
