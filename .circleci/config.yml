@@ -204,6 +204,7 @@ jobs:
             checksum="$(npx --package=earthfast-cli@0.10.2 --yes earthfast bundle checksum $bundle_filename)"
 
             echo "$checksum" > ~/project/repository/checksum
+            echo "export checksum=\"$checksum\"" >> $BASH_ENV
             echo "Bundle Filename: $bundle_filename"
             echo "Checksum: $checksum"
 
@@ -217,7 +218,12 @@ jobs:
           environment:
             PROJECT_OWNER_WALLET_PRIVATE_KEY: $PROJECT_OWNER_WALLET_PRIVATE_KEY
           command: |
-            npx earthfast-cli@0.10.3 project publish $project_id $bundle_filename $checksum --key=$PROJECT_OWNER_WALLET_PRIVATE_KEY
+            BUNDLE_URL="https://output.circle-artifacts.com/output/job/${CIRCLE_WORKFLOW_JOB_ID}/artifacts/${CIRCLE_NODE_INDEX}/earthfast-bundle.tgz"
+            echo "project_id: $project_id"
+            echo "bundle_filename: $bundle_filename"
+            echo "checksum: $checksum"
+            echo "BUNDLE_URL: $BUNDLE_URL"
+            npx earthfast-cli@0.10.3 project publish $project_id $BUNDLE_URL $checksum --key=$PROJECT_OWNER_WALLET_PRIVATE_KEY
       
 
 workflows:
