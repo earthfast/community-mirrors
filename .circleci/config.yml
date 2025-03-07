@@ -218,6 +218,7 @@ jobs:
           environment:
             PROJECT_OWNER_WALLET_PRIVATE_KEY: $PROJECT_OWNER_WALLET_PRIVATE_KEY
           command: |
+            sleep 10
             BUNDLE_URL="https://output.circle-artifacts.com/output/job/${CIRCLE_WORKFLOW_JOB_ID}/artifacts/${CIRCLE_NODE_INDEX}/earthfast-bundle.tgz"
             echo "project_id: $project_id"
             echo "checksum: $checksum"
