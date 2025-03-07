@@ -56,6 +56,7 @@ jobs:
                 echo "export type=\"$type\"" >> $BASH_ENV
                 echo "export sha=\"$sha\"" >> $BASH_ENV
                 echo "export environment_variables=\"$environment_variables\"" >> $BASH_ENV
+                echo "export project_id=\"$project_id\"" >> $BASH_ENV
                 echo "=============================="
               fi
             done
