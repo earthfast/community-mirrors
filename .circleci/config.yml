@@ -37,7 +37,7 @@ jobs:
                 echo "File: $file"
                 cat "$file"
                 name=$(jq -r '.name' "$file")
-                url=$(jq -r '.url' "$file")
+                url=$(jq -r '.git.url' "$file")
                 branch=$(jq -r '.buildCommands.branchName // ""' "$file")
                 build_dir=$(jq -r '.buildCommands.buildDir // ""' "$file")
                 output_dir=$(jq -r '.buildCommands.outputDir // ""' "$file")
@@ -45,7 +45,7 @@ jobs:
                 build_command=$(jq -r '.buildCommands.buildCommand // ""' "$file")
                 environment_variables=$(jq -r '.buildCommands.environmentVariables // ""' "$file")
                 type=$(jq -r '.type // "static"' "$file")
-                sha=$(jq -r '.sha // ""' "$file")
+                sha=$(jq -r '.git.sha // ""' "$file")
                 project_id=$(jq -r '.projectId // ""' "$file")
                 echo "export url=\"$url\"" >> $BASH_ENV
                 echo "export branch=\"$branch\"" >> $BASH_ENV
