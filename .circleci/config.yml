@@ -223,7 +223,7 @@ jobs:
             echo "project_id: $project_id"
             echo "checksum: $checksum"
             echo "BUNDLE_URL: $BUNDLE_URL"
-            npx earthfast-cli@0.10.3 project publish $project_id $BUNDLE_URL $checksum --key=$PROJECT_OWNER_WALLET_PRIVATE_KEY
+            npx earthfast-cli@0.10.4 project publish $project_id $BUNDLE_URL $checksum --key=$PROJECT_OWNER_WALLET_PRIVATE_KEY
       
 
 workflows:
